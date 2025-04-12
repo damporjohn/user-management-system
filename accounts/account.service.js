@@ -11,13 +11,13 @@ module.exports = {
     authenticate,
     refreshToken,
     revokeToken,
+    forgotPassword,
     register,
     verifyEmail,
-    // forgotPassword - rivas
     validateResetToken,
-    //resetPassword - rivas
-    //getAll - rivas
-    //getById - rivas
+    resetPassword,
+    getAll,
+    getById,
     create,
     update,
     delete: _delete
@@ -135,9 +135,15 @@ async function resetPassword({ token, password }) {
     await account.save() ;
 }
 
-// async function getAll() { - RIVAS
+async function getAll() {
+    const accounts = await db.Account.findAll();
+    return accounts.map(x => basicDetails(x));
+}
 
-// async function getById(id) { - RIVAS
+async function getById(id) {
+    const account = await getAccount(id);
+    return basicDetails(account);
+}
 
 async function create(params) {
     //validate
