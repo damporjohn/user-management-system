@@ -12,11 +12,11 @@ router.post('/refresh-token', refreshToken);
 router.post('/revoke-token', authorize(), revokeTokenSchema, revokeToken);
 //router.post('/register', registerSchema, register); - DAMPOR
 //router.post('/verify-email', verifyEmailSchema, verifyEmail); - DAMPOR
-//router.post( '/forgot-password', forgotPasswordSchema, forgotPassword); - RIVAS 
+router.post( '/forgot-password', forgotPasswordSchema, forgotPassword); - RIVAS 
 router.post('/validate-reset-token', validateResetTokenSchema, validateResetToken);
-//router.post('/reset-password', resetPasswordSchema, resetPassword); - RIVAS
-//router.get('/', authorize(Role.Admin), getAll); - RIVAS
-//router.get('/: id', authorize(), getById); - RIVAS
+router.post('/reset-password', resetPasswordSchema, resetPassword); - RIVAS
+router.get('/', authorize(Role.Admin), getAll); - RIVAS
+router.get('/: id', authorize(), getById); - RIVAS
 router.post('/', authorize(Role.Admin), createSchema, create);
 router.put('/:id', authorize(), updateSchema, update);
 router.delete('/: id', authorize(), _delete);
@@ -71,8 +71,19 @@ function revokeToken(req, res, next) {
 //function verifyEmail - DAMPOR
 
 //function forgotPasswordSchema - RIVAS
+function forgotPasswordSchema(req, res, next) {
+    const schema = Joi.object({
+        email: Joi.string().email().required()
+    });
+    validateRequest(req, next, schema);
+}
 
 //function forgotPassword - RIVAS
+function forgotPassword(req, res, next) {
+    accountService.forgotPassword(req.body, req.get('origin'))
+        .then(() => res.json({ message: 'Please check your email for password reset instructions' }))
+        .catch(next);
+}
 
 function validateResetTokenSchema(req, res, next) {
     const schema = Joi.object({
@@ -87,12 +98,36 @@ function validateResetTokenSchema(req, res, next) {
 }
 
 //function resetPasswordSchema(req, res, next) { - RIVAS
- 
+function resetPasswordSchema(req, res, next) {
+    const schema = Joi.object({
+        token: Joi.string().required(),
+        password: Joi.string().min(6).required(),
+        confirmPassword: Joi.string().valid(Joi.ref('password')).required()
+    });
+    validateRequest(req, next, schema);
+}
+
 //function resetPassword (req, res, next) { - RIVAS
+function resetPassword(req, res, next) {
+    accountService.resetPassword(req.body)
+        .then(() => res.json({ message: 'Password reset successful, you can now login' }))
+        .catch(next);
+}
 
 //function getAll - RIVAS
+function getAll(req, res, next) {
+    accountService.getAll()
+        .then(accounts => res.json(accounts))
+        .catch(next);
+}
 
 //function getById - RIVAS
+function getById(req, res, next) {
+    // users can get their own account and admins can get any account
+    if (Number(req.params.id) !== req.user.id && req.user.role !== Role.Admin) {
+        return res.status(401).json({ message: 'Unauthorized' });
+    }
+}
 
 function createSchema(req, res, next) {
     const schema = Joi.object({
